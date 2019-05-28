@@ -18,6 +18,7 @@
 Motor M1(0x30, _MOTOR_B, 1000);
 
 #define TOUCH_TH 50 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
+// with LOLIN D32 at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
 
 void setup()
 {
