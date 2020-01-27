@@ -3,15 +3,17 @@
 //   - power via 2 AA batteries
 // - N20 geared motor driven by TB6612FNG I2C motor shield (D1 to GPIO22, D2 to GPIO21)
 //   - power via 9V block battery
-// see folder dev/ for more details
+// see README.md and folder dev for more details/examples
 
 // TB6612FNG shield's STM32F030 flashed with fixed firmware from https://hackaday.io/project/18439-motor-shield-reprogramming
 
-// power consumption (motor at 9 V, rest at ~3.2 V of 2 AA)
+// power consumption (motor at 9 V, ESP32+shield at ~3.2 V of 2 AA)
 //   motor: ~40 mA no load
 //   DOIT DEVKIT V1: 48.2 mA, 10 mA deep sleep
+//   LOLIN D32: 39.4 mA, 0.7 mA deep sleep
 //   bare ESP32: 36.8 mA, 5.2 uA deep sleep, with shield connected 16.9 uA?
 //   TB6612FNG I2C shield: 2.8 mA, 1.8 mA in standby?
+
 
 #include "WEMOS_Motor.h"
 
@@ -28,13 +30,17 @@ void setup()
 
 void loop()
 {
-  int touch_open  = touchRead(15);
-  int touch_close = touchRead(4); // 0 once every ~22 iterations, later use D13 instead which seems fine
-  // D2 should be touch but is always 0
-  Serial.printf("touch: open %d, close %d, D13 %d\n", touch_open, touch_close, touchRead(13));
-  // there were random touch values of 0 every couple of seconds for pin 4
+  delay(100);
+  // overview which pins are save to use: https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+  // pins falling below threshold without touching: 32, 33
+  int touch_open  = touchRead(12);
+  int touch_close = touchRead(13); // if the first read drops below threshold, the second one will go to 0 as well after some time
+  // sadly all touch pins report 0 every ~20 iterations without being touched, so we have to ignore 0
+  // without touch the values are ~60-80, with touch 1-15
   bool do_open  = touch_open && touch_open < TOUCH_TH;
   bool do_close = touch_close && touch_close < TOUCH_TH;
+  if (do_open || do_close)
+    Serial.printf("touch: open %d, close %d\n", touch_open, touch_close);
   uint8_t cmd;
   if (do_open && do_close) cmd = _STANDBY;
   else if (do_open) cmd = _CCW;
