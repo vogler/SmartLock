@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "defines": [
+                "ARDUINO=10810"
+            ],
+            "includePath": [
+                "${workspaceRoot}",
+                "/Users/voglerr/Documents/Arduino/libraries/**",
+                "/Users/voglerr/Documents/Arduino/libraries/WEMOS_Motor_Shield_Arduino_Library/src",
+                "/Users/voglerr/Library/Arduino15/packages/esp32/hardware/esp32/1.0.4/**",
+                "/Users/voglerr/Library/Arduino15/packages/esp32/tools/**"
+            ],
+            "forcedInclude": [],
+            "intelliSenseMode": "clang-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
