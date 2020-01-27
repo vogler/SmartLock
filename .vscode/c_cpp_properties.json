@@ -7,12 +7,15 @@
             ],
             "includePath": [
                 "${workspaceRoot}",
-                "/Users/voglerr/Documents/Arduino/libraries/**",
-                "/Users/voglerr/Documents/Arduino/libraries/WEMOS_Motor_Shield_Arduino_Library/src",
+                "lib/WEMOS_Motor_Shield_Arduino_Library/src",
                 "/Users/voglerr/Library/Arduino15/packages/esp32/hardware/esp32/1.0.4/**",
-                "/Users/voglerr/Library/Arduino15/packages/esp32/tools/**"
+                "/Users/voglerr/Library/Arduino15/packages/esp32/tools/**",
+                "/Users/voglerr/Documents/Arduino/libraries/**"
             ],
-            "forcedInclude": [],
+            "forcedInclude": [
+                "/Users/voglerr/Library/Arduino15/packages/esp32/hardware/esp32/1.0.4/variants/lolin32/pins_arduino.h",
+                "/Users/voglerr/Library/Arduino15/packages/esp32/hardware/esp32/1.0.4/cores/esp32/Arduino.h"
+            ],
             "intelliSenseMode": "clang-x64",
             "cStandard": "c11",
             "cppStandard": "c++17"
