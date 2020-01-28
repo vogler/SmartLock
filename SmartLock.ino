@@ -43,6 +43,10 @@ bool touch2 = false;
 void touch1_ISR(){ touch1 = true; }
 void touch2_ISR(){ touch2 = true; }
 
+#define SLEEP_TIMEOUT 5000 // go to deep sleep after 5s of no action
+
+#include "WiFi.h"
+
 void setup()
 {
   Serial.begin(115200);
@@ -55,7 +59,15 @@ void setup()
   // use touch interrupts instead of touchRead in loop because it sometimes triggers without touch (maybe if reading too often?)
   touchAttachInterrupt(T2, touch1_ISR, TOUCH_TH);
   touchAttachInterrupt(T3, touch2_ISR, TOUCH_TH);
+
+  esp_sleep_enable_touchpad_wakeup();
+
+  // BT and WiFi off
+  btStop();
+  WiFi.mode(WIFI_OFF);
 }
+
+unsigned long last_action;
 
 void loop()
 {
@@ -71,16 +83,18 @@ void loop()
     // Serial.printf("touch: open %d, close %d\n", touch_open, touch_close);
 
   delay(100);
+  if(touch1) Serial.println("Touch 1 detected");
+  if(touch2) Serial.println("Touch 2 detected");
   bool do_open = touch1;
   bool do_close = touch2;
-  if(touch1){
-    touch1 = false;
-    Serial.println("Touch 1 detected");
+  touch1 = false; touch2 = false;
+
+  if (do_open || do_close) last_action = millis();
+  else if (millis() - last_action > SLEEP_TIMEOUT) {
+    Serial.printf("Going to sleep because there was no action for %d ms\n", SLEEP_TIMEOUT);
+    esp_deep_sleep_start();
   }
-  if(touch2){
-    touch2 = false;
-    Serial.println("Touch 2 detected");
-  }
+
   if (do_open && do_close) {
     motor_standby();
     esp_sleep_enable_timer_wakeup(20 * 1000 * 1000);
