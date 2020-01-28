@@ -1,5 +1,6 @@
 {
     "board": "esp32:esp32:d32",
     "configuration": "PartitionScheme=default,FlashFreq=80,UploadSpeed=921600,DebugLevel=none",
-    "port": "/dev/cu.SLAB_USBtoUART"
+    "port": "/dev/cu.SLAB_USBtoUART",
+    "sketch": "SmartLock.ino"
 }
