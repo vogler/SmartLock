@@ -39,8 +39,8 @@ void motor_standby(){
 // with LOLIN D32 at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
 bool touch1 = false;
 bool touch2 = false;
-void touch1_ISR(){ touch1 = true; }
-void touch2_ISR(){ touch2 = true; }
+void ICACHE_RAM_ATTR touch1_ISR(){ touch1 = true; }
+void ICACHE_RAM_ATTR touch2_ISR(){ touch2 = true; }
 
 #define SLEEP_TIMEOUT 5000 // go to deep sleep after 5s of no action
 
@@ -55,9 +55,10 @@ bool auth = false;
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.printf("MQTT message on topic %s with payload ", topic);
   for(int i = 0; i < length; i++){
-    Serial.print(*(payload+i));
+    Serial.print((char) *(payload+i));
   }
-  auth = *payload == 1;
+  Serial.println();
+  auth = *payload == '1';
 }
 
 #include <PubSubClient.h>
@@ -88,7 +89,7 @@ void setup_mqtt() {
   mqtt.setCallback(mqtt_callback);
   randomSeed(micros());
   while (!mqtt.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    Serial.print("Attempting MQTT connection... ");
     String clientId = "SmartLock-ESP32-" + String(random(0xffff), HEX);
     if (mqtt.connect(clientId.c_str())) {
       Serial.printf("connected as %s to mqtt://%s\n", clientId.c_str(), MQTT_SERVER);
@@ -132,6 +133,7 @@ unsigned long last_action;
 
 void loop()
 {
+  mqtt.loop();
   // overview which pins are save to use: https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
   // pins falling below threshold without touching: 32, 33
   // const byte touch_open  = touchRead(2);
