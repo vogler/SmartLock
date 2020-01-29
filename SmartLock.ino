@@ -37,7 +37,6 @@ void motor_standby(){
 
 #define TOUCH_TH 50 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
 // with LOLIN D32 at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
-
 bool touch1 = false;
 bool touch2 = false;
 void touch1_ISR(){ touch1 = true; }
@@ -45,7 +44,62 @@ void touch2_ISR(){ touch2 = true; }
 
 #define SLEEP_TIMEOUT 5000 // go to deep sleep after 5s of no action
 
+#include <MyConfig.h> // credentials, servers, ports
+
 #include "WiFi.h"
+WiFiClient wifi;
+
+#define MQTT_TOPIC "door/auth"
+bool auth = false;
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+  Serial.printf("MQTT message on topic %s with payload ", topic);
+  for(int i = 0; i < length; i++){
+    Serial.print(*(payload+i));
+  }
+  auth = *payload == 1;
+}
+
+#include <PubSubClient.h>
+PubSubClient mqtt(MQTT_SERVER, MQTT_PORT, mqtt_callback, wifi);
+
+void setup_wifi() {
+  delay(5);
+  Serial.printf("Connecting to AP %s", WIFI_SSID);
+  const unsigned long start_time = millis();
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  for (int i = 0; WiFi.waitForConnectResult() != WL_CONNECTED && i < 20; i++) {
+    WiFi.begin(WIFI_SSID, WIFI_PASS); // for ESP32 also had to be moved inside the loop, otherwise only worked on every second boot, https://github.com/espressif/arduino-esp32/issues/2501#issuecomment-548484502
+    delay(100);
+    Serial.print(".");
+  }
+  const float connect_time = (millis() - start_time) / 1000.;
+  Serial.println();
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.printf("Failed to connect to Wifi in %.3f seconds. Going to restart!", connect_time);
+    ESP.restart();
+  }
+  Serial.printf("Connected in %.3f seconds. IP address: ", connect_time);
+  Serial.println(WiFi.localIP());
+}
+
+void setup_mqtt() {
+  mqtt.setCallback(mqtt_callback);
+  randomSeed(micros());
+  while (!mqtt.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    String clientId = "SmartLock-ESP32-" + String(random(0xffff), HEX);
+    if (mqtt.connect(clientId.c_str())) {
+      Serial.printf("connected as %s to mqtt://%s\n", clientId.c_str(), MQTT_SERVER);
+      while(!mqtt.subscribe(MQTT_TOPIC)) Serial.print(".");
+      Serial.printf("subscribed to topic %s\n", MQTT_TOPIC);
+    } else {
+      Serial.printf("failed, rc=%d. retry in 1s.\n", mqtt.state());
+      delay(1000);
+    }
+  }
+}
 
 void setup()
 {
@@ -62,9 +116,16 @@ void setup()
 
   esp_sleep_enable_touchpad_wakeup();
 
-  // BT and WiFi off
+  setup_wifi();
+  setup_mqtt();
+}
+
+void deep_sleep() {
+  // BT and WiFi off; not sure if needed...
   btStop();
-  WiFi.mode(WIFI_OFF);
+  // WiFi.mode(WIFI_OFF);
+  WiFi.disconnect(true); // true = WiFi off
+  esp_deep_sleep_start();
 }
 
 unsigned long last_action;
@@ -92,16 +153,16 @@ void loop()
   if (do_open || do_close) last_action = millis();
   else if (millis() - last_action > SLEEP_TIMEOUT) {
     Serial.printf("Going to sleep because there was no action for %d ms\n", SLEEP_TIMEOUT);
-    esp_deep_sleep_start();
+    deep_sleep();
   }
 
   if (do_open && do_close) {
     motor_standby();
     esp_sleep_enable_timer_wakeup(20 * 1000 * 1000);
     Serial.println("Going to sleep for 20s because you told me to.");
-    esp_deep_sleep_start();
+    deep_sleep();
   }
-  else if (do_open) motor_CCW();
-  else if (do_close) motor_CW();
+  else if (auth && do_open) motor_CCW();
+  else if (auth && do_close) motor_CW();
   else motor_standby();
 }
