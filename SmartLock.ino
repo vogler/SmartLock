@@ -35,8 +35,11 @@ void motor_standby(){
   digitalWrite(PIN_STBY, LOW);
 }
 
-#define TOUCH_TH 50 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
-// with LOLIN D32 at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
+#define TOUCH_TH 22 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
+// with LOLIN D32 on USB at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
+// Fixed pin to metal frame on the inside. Via USB: no touch ~25, touch: 18-20, 22 as threshold works.
+// However, from batteries, touchRead gives 34-37 with no difference whether touching the frame or not. 63-69 if pin is in the air. Only 39-43 if pinched directly.
+// -> Somehow, on batteries my touching does not add any capacitance to that of the frame. Also touching the metal Macbook case does not make a difference on batteries, whereas the value even goes to 0 when running from USB.
 bool touch1 = false;
 bool touch2 = false;
 void ICACHE_RAM_ATTR touch1_ISR(){ touch1 = true; }
@@ -49,8 +52,12 @@ void ICACHE_RAM_ATTR touch2_ISR(){ touch2 = true; }
 #include "WiFi.h"
 WiFiClient wifi;
 
-#define MQTT_TOPIC "door/auth"
+#define MQTT_TOPIC_AUTH "door/auth"
 bool auth = false;
+#define MQTT_TOPIC_LOG  "door/log"
+// json
+char buf[200];
+#define json(s, ...) (sprintf(buf, "{ " s " }", __VA_ARGS__), buf)
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.printf("MQTT message on topic %s with payload ", topic);
@@ -93,8 +100,8 @@ void setup_mqtt() {
     String clientId = "SmartLock-ESP32-" + String(random(0xffff), HEX);
     if (mqtt.connect(clientId.c_str())) {
       Serial.printf("connected as %s to mqtt://%s\n", clientId.c_str(), MQTT_SERVER);
-      while(!mqtt.subscribe(MQTT_TOPIC)) Serial.print(".");
-      Serial.printf("subscribed to topic %s\n", MQTT_TOPIC);
+      while(!mqtt.subscribe(MQTT_TOPIC_AUTH)) Serial.print(".");
+      Serial.printf("subscribed to topic %s\n", MQTT_TOPIC_AUTH);
     } else {
       Serial.printf("failed, rc=%d. retry in 1s.\n", mqtt.state());
       delay(1000);
@@ -119,6 +126,7 @@ void setup()
 
   setup_wifi();
   setup_mqtt();
+  mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"wakeup\"", millis())); // takes ~500-700ms
 }
 
 void deep_sleep() {
@@ -148,15 +156,22 @@ void loop()
   delay(100);
   if(touch1) Serial.println("Touch 1 detected");
   if(touch2) Serial.println("Touch 2 detected");
+  uint16_t touch1a = touchRead(T2);
+  Serial.printf("touch1 %d\n", touch1a);
   bool do_open = touch1;
   bool do_close = touch2;
   touch1 = false; touch2 = false;
 
-  if (do_open || do_close) last_action = millis();
-  else if (millis() - last_action > SLEEP_TIMEOUT) {
-    Serial.printf("Going to sleep because there was no action for %d ms\n", SLEEP_TIMEOUT);
-    deep_sleep();
-  }
+  // for finding the right touch threshold: report value and comment out sleep since we would not wake up
+  mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"%s\", \"touch\": %d, \"auth\": %s", millis(), do_open ? (do_close ? "both" : "open") : "close", touch1a, auth ? "true": "false"));
+
+  // if (do_open || do_close) {
+  //   last_action = millis();
+  //   mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"%s\", \"touch\": %d, \"auth\": %s", millis(), do_open ? (do_close ? "both" : "open") : "close", touch1a, auth ? "true": "false"));
+  // } else if (millis() - last_action > SLEEP_TIMEOUT) {
+  //   Serial.printf("Going to sleep because there was no action for %d ms\n", SLEEP_TIMEOUT);
+  //   deep_sleep();
+  // }
 
   if (do_open && do_close) {
     motor_standby();
