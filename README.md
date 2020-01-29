@@ -54,3 +54,5 @@
 ## Links
 - [Youtube: Comparison of 10 ESP32 Battery powered Boards without display (incl. deep-sleep)](https://www.youtube.com/watch?v=-769_YIeGmI)
     - [ESP32 Boards Comparison](https://docs.google.com/spreadsheets/d/1Mu-bNwpnkiNUiM7f2dx8-gPnIAFMibsC2hMlWhIHbPQ/edit#gid=0): LOLIN D32: 125 uA deep sleep from battery
+- [ESP32 Capacitive Sensors](https://nick.zoic.org/art/esp32-capacitive-sensors/): maybe the difference USB<>battery is because of the bigger ground plane with USB
+- [Touch Sensor Application Note](https://github.com/espressif/esp-iot-solution/blob/master/documents/touch_pad_solution/touch_sensor_design_en.md)
