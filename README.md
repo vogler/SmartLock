@@ -1,5 +1,5 @@
 # DIY SmartLock
-
+## Log
 1. Test which motor is strong enough
     - geared motor at 9V can close lock and open door
       - at 5V from power bank only enough to close and open the lock but not enough to pull the [trap](https://de.wikipedia.org/wiki/Schlossfalle) open
@@ -49,3 +49,8 @@
     - WiFi: do presence detection on the RPi and ask it whether to open
       - phone connected to WiFi (already connects at the elevator)
       - yes if sequence: door sensor open/close, no motion, phone disconnected from WiFi for x min, phone connected to WiFi
+
+
+## Links
+- [Youtube: Comparison of 10 ESP32 Battery powered Boards without display (incl. deep-sleep)](https://www.youtube.com/watch?v=-769_YIeGmI)
+    - [ESP32 Boards Comparison](https://docs.google.com/spreadsheets/d/1Mu-bNwpnkiNUiM7f2dx8-gPnIAFMibsC2hMlWhIHbPQ/edit#gid=0): LOLIN D32: 125 uA deep sleep from battery
