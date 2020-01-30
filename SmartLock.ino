@@ -35,7 +35,8 @@ void motor_standby(){
   digitalWrite(PIN_STBY, LOW);
 }
 
-#define TOUCH_TH 22 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
+// with USB cable dangling: 99-103 no-touch vs. 92-96 touch
+#define TOUCH_TH 98 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
 // with LOLIN D32 on USB at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
 // Fixed pin to metal frame on the inside. Via USB: no touch ~25, touch: 18-20, 22 as threshold works.
 // However, from batteries, touchRead gives 34-37 with no difference whether touching the frame or not. 63-69 if pin is in the air. Only 39-43 if pinched directly.
@@ -58,6 +59,7 @@ bool auth = false;
 // json
 char buf[200];
 #define json(s, ...) (sprintf(buf, "{ " s " }", __VA_ARGS__), buf)
+#define b2s(x) (x ? "true" : "false")
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.printf("MQTT message on topic %s with payload ", topic);
@@ -120,7 +122,22 @@ void setup()
 
   // use touch interrupts instead of touchRead in loop because it sometimes triggers without touch (maybe if reading too often?)
   touchAttachInterrupt(T2, touch1_ISR, TOUCH_TH);
-  touchAttachInterrupt(T3, touch2_ISR, TOUCH_TH);
+  // touchAttachInterrupt(T3, touch2_ISR, TOUCH_TH);
+
+  // read the current touch voltage settings
+  touch_high_volt_t refh; touch_low_volt_t refl; touch_volt_atten_t atten;
+  touch_pad_get_voltage(&refh, &refl, &atten);
+  Serial.printf("touch_pad_get_voltage: refh: %d, refl: %d, atten: %d\n", refh, refl, atten);
+  // refh: 3, refl: 0, atten: 3
+  // refh: TOUCH_HVOLT_2V7, refl: TOUCH_LVOLT_0V5, atten: TOUCH_HVOLT_ATTEN_0V
+  // touch_pad_set_voltage(TOUCH_HVOLT_2V4, TOUCH_LVOLT_0V8, TOUCH_HVOLT_ATTEN_0V); // batteries: 160, 150-157
+
+  // increase touch accuracy by increasing measurment time; otherwise touch does not make enough difference when running on batteries (via USB it is ok)
+  touchSetCycles(0x3000, 0x1000); // default for both is 0x1000 which results in touchRead taking 0.5ms
+  // no-touch, touch on batteries:
+  // 0x3000, 0x1000: 118, 108-114
+  // 0x6000, 0x2000: 231-236, 223-227
+  // 0x6000, 0x6000: 231-236, 226-231
 
   esp_sleep_enable_touchpad_wakeup();
 
@@ -163,15 +180,16 @@ void loop()
   touch1 = false; touch2 = false;
 
   // for finding the right touch threshold: report value and comment out sleep since we would not wake up
-  mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"%s\", \"touch\": %d, \"auth\": %s", millis(), do_open ? (do_close ? "both" : "open") : "close", touch1a, auth ? "true": "false"));
+  // mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"%s\", \"touch\": %d, \"auth\": %s", millis(), do_open ? (do_close ? "both" : "open") : "close", touch1a, b2s(auth)));
 
-  // if (do_open || do_close) {
-  //   last_action = millis();
-  //   mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"%s\", \"touch\": %d, \"auth\": %s", millis(), do_open ? (do_close ? "both" : "open") : "close", touch1a, auth ? "true": "false"));
-  // } else if (millis() - last_action > SLEEP_TIMEOUT) {
-  //   Serial.printf("Going to sleep because there was no action for %d ms\n", SLEEP_TIMEOUT);
-  //   deep_sleep();
-  // }
+  if (do_open || do_close) {
+    last_action = millis();
+    mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"%s\", \"touch\": %d, \"auth\": %s", millis(), do_open ? (do_close ? "both" : "open") : "close", touch1a, b2s(auth)));
+  } else if (millis() - last_action > SLEEP_TIMEOUT) {
+    Serial.printf("Going to sleep because there was no action for %d ms\n", SLEEP_TIMEOUT);
+    // mqtt.publish(MQTT_TOPIC_LOG, json("\"millis\": %lu, \"action\": \"sleep\"", millis())); // does not get sent (probably needs delay before turning off)
+    deep_sleep();
+  }
 
   if (do_open && do_close) {
     motor_standby();

@@ -30,7 +30,11 @@
     - trigger it manually from phone via bluetooth/WiFi -> don't want to take phone out
     - detect touch of door knob and open then
       - ESP32 can stay in deep sleep and wake up from touch via one of its touch pins; metal on the inside is connected to the outside of the door
-      - authentification fast enough to do it only after waking up?
+      - authentification fast enough to do it only after waking up? -> yes
+      - works fine when powered via USB, but difference of no-touch vs. touch is very small when running on batteries (lower voltage, less ground capacitance?)
+        - tried to increase accuracy by increasing measurement time
+        - seems a bit better with USB cable hanging
+        - found some threshold that works (see comments), but have to test if reliable under changing temperature, voltage etc.
 7. How to authenticate?
     - not at all: everyone can open the door if they know they just have to touch it (which no one would probably do :))
     - have some touch Morse code: takes too long
