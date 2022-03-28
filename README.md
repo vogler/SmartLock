@@ -8,6 +8,9 @@ The ESP32 goes into deep sleep and wakes up using the capacitive touch sensor on
 Whether it should open or not can be set via MQTT on `door/auth` which is checked via WiFi on wake.
 This is pretty flexible with MQTT dashboard on the phone or some automation with presence detection in node-red on the RPi.
 
+![image](https://user-images.githubusercontent.com/493741/160496199-4d856411-4438-4757-b90a-679956a14b8a.png)
+[Album](https://photos.app.goo.gl/bewiZ1qH8sHnJjmg7) with more photos and videos of the lock in action.
+
 ## Log
 1. Test which motor is strong enough
     - geared motor at 9V can close lock and open door
