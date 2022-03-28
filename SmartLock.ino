@@ -13,6 +13,7 @@
 //   TB6612FNG I2C shield: 2.8 mA, 1.8 mA in standby?
 //   TB6612FNG bare: ?
 
+
 // #include "WEMOS_Motor.h"
 // Motor M1(0x30, _MOTOR_B, 1000);
 // changed from I2C shield to controlling TB6612FNG directly:
@@ -35,7 +36,10 @@ void motor_standby(){
   digitalWrite(PIN_STBY, LOW);
 }
 
-// with USB cable dangling: 99-103 no-touch vs. 92-96 touch
+
+// Wake from deep sleep via capacitive touch sensor.
+// Need to define some threshold, value lowers when touched. When connected via USB, the difference is quite high, but when running on batteries very low.
+// on batteries with USB cable dangling: 99-103 no-touch vs. 92-96 touch
 #define TOUCH_TH 98 // touch threshold, values usually 2-12 with finger depending on how hard the pinch, on batteries somehow higher
 // with LOLIN D32 on USB at pin 15 usually ~60, pin held to screw on the inside: ~33, when touching knob from outside: ~21
 // Fixed pin to metal frame on the inside. Via USB: no touch ~25, touch: 18-20, 22 as threshold works.
@@ -47,6 +51,7 @@ void ICACHE_RAM_ATTR touch1_ISR(){ touch1 = true; }
 void ICACHE_RAM_ATTR touch2_ISR(){ touch2 = true; }
 
 #define SLEEP_TIMEOUT 5000 // go to deep sleep after 5s of no action
+
 
 #include <MyConfig.h> // credentials, servers, ports
 
@@ -111,11 +116,13 @@ void setup_mqtt() {
   }
 }
 
+
 void setup()
 {
   Serial.begin(115200);
   Serial.println("setup");
 
+  // TB6612FNG motor driver pins
   pinMode(PIN_BIN1, OUTPUT);
   pinMode(PIN_BIN2, OUTPUT);
   pinMode(PIN_STBY, OUTPUT);
@@ -133,7 +140,7 @@ void setup()
   // touch_pad_set_voltage(TOUCH_HVOLT_2V4, TOUCH_LVOLT_0V8, TOUCH_HVOLT_ATTEN_0V); // batteries: 160, 150-157
 
   // increase touch accuracy by increasing measurment time; otherwise touch does not make enough difference when running on batteries (via USB it is ok)
-  touchSetCycles(0x3000, 0x1000); // default for both is 0x1000 which results in touchRead taking 0.5ms
+  touchSetCycles(0x3000, 0x1000); // cycles for measure & sleep, default for both is 0x1000 which results in touchRead taking 0.5ms
   // no-touch, touch on batteries:
   // 0x3000, 0x1000: 118, 108-114
   // 0x6000, 0x2000: 231-236, 223-227

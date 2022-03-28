@@ -1,4 +1,13 @@
 # DIY SmartLock
+3D printed smart lock using ESP32 via 2 AA cells, N20 geared motor driven by TB6612FNG via 9V block.
+
+[Fusion 360](https://a360.co/3NtIbpZ) offers download of STL files for 3D printing.
+The slot for the key has some clearance. I wrapped some insulating tape around the end of the key to make a good fit.
+
+The ESP32 goes into deep sleep and wakes up using the capacitive touch sensor on pin `T2` which is connected to the metal case around the lock. Since this is connected to the metal door knob on the outside of the door, it is enough to touch the door knob outside to wake up the ESP32 and open the door.
+Whether it should open or not can be set via MQTT on `door/auth` which is checked via WiFi on wake.
+This is pretty flexible with MQTT dashboard on the phone or some automation with presence detection in node-red on the RPi.
+
 ## Log
 1. Test which motor is strong enough
     - geared motor at 9V can close lock and open door
@@ -58,5 +67,6 @@
 ## Links
 - [Youtube: Comparison of 10 ESP32 Battery powered Boards without display (incl. deep-sleep)](https://www.youtube.com/watch?v=-769_YIeGmI)
     - [ESP32 Boards Comparison](https://docs.google.com/spreadsheets/d/1Mu-bNwpnkiNUiM7f2dx8-gPnIAFMibsC2hMlWhIHbPQ/edit#gid=0): LOLIN D32: 125 uA deep sleep from battery
+- [ESP32 API: Touch Sensor](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/touch_pad.html)
 - [ESP32 Capacitive Sensors](https://nick.zoic.org/art/esp32-capacitive-sensors/): maybe the difference USB<>battery is because of the bigger ground plane with USB
-- [Touch Sensor Application Note](https://github.com/espressif/esp-iot-solution/blob/master/documents/touch_pad_solution/touch_sensor_design_en.md)
+- [Touch Sensor Application Note](https://github.com/espressif/esp-iot-solution/blob/e330b4d3ed947c7a99b448983096797e65be81c9/documents/touch_pad_solution/touch_sensor_design_en.md)
