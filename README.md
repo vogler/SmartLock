@@ -1,7 +1,8 @@
 # DIY SmartLock
 3D printed smart lock using ESP32 via 2 AA cells, N20 geared motor driven by TB6612FNG via 9V block.
 
-Designed with Fusion 360. [Here](https://a360.co/4lLHHwa) you can view the model online and download the STL files for 3D printing.
+Designed with Fusion 360. [Here](https://a360.co/4lLHHwa) you can view the model online and download it in various formats.
+The STL files for 3d-printing the 4 parts are also available in [`stl`](https://github.com/vogler/SmartLock/tree/master/stl).
 The slot for the key has some clearance. I wrapped some insulating tape around the end of the key to make a good fit.
 
 The ESP32 goes into deep sleep and wakes up using the capacitive touch sensor on pin `T2` which is connected to the metal case around the lock. Since this is connected to the metal door knob on the outside of the door, it is enough to touch the door knob outside to wake up the ESP32 and open the door.
